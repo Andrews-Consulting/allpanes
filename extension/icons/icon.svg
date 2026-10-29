@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- A window split into three panes, with an arrow down the middle one: every pane, all the way down. -->
+  <rect width="128" height="128" rx="26" fill="#2563eb"/>
+  <rect x="18" y="18" width="92" height="92" rx="10" fill="#ffffff"/>
+  <rect x="40" y="18" width="7" height="92" fill="#2563eb"/>
+  <rect x="81" y="18" width="7" height="92" fill="#2563eb"/>
+  <rect x="61" y="34" width="6" height="40" rx="3" fill="#2563eb"/>
+  <path d="M49 66 L64 92 L79 66 Z" fill="#2563eb"/>
+</svg>

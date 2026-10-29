@@ -1,0 +1,6 @@
+node_modules/
+test/out/
+# Site configs and test-account credentials for test/site.mjs. Never commit.
+.config/
+# Personal Claude Code settings and hooks.
+.claude/

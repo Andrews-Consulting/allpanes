@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pane Capture</title>
+    <link rel="stylesheet" href="result.css" />
+    <script type="module" src="result.js"></script>
+  </head>
+  <body>
+    <header class="bar">
+      <div class="meta">
+        <strong id="title">Pane Capture</strong>
+        <span id="dims"></span>
+      </div>
+      <div class="actions" id="actions" hidden>
+        <button id="options" type="button" class="quiet">Options</button>
+        <button id="size" type="button">Actual size</button>
+        <button id="copy" type="button">Copy image</button>
+        <button id="download-alt" type="button">Download JPEG</button>
+        <button id="download" type="button" class="primary">Download PNG</button>
+      </div>
+    </header>
+    <p id="notes" class="notes" hidden></p>
+    <main id="stage" class="stage fit">
+      <img id="shot" alt="Full-page capture" hidden />
+    </main>
+  </body>
+</html>

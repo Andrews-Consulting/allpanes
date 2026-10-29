@@ -1,0 +1,18 @@
+{
+  "baseUrl": "https://app.example.com",
+  "window": { "width": 1600, "height": 1000 },
+  "login": {
+    "path": "/login",
+    "credentials": "credentials.json",
+    "fields": { "#email": "email", "#password": "password" },
+    "submit": "button[type=submit]"
+  },
+  "ready": "main",
+  "busy": "text=Loading",
+  "settleMs": 1500,
+  "pages": [
+    "/",
+    "/settings",
+    { "path": "/reports", "clickAll": "main .section-header:has(> svg.chevron-down)" }
+  ]
+}
