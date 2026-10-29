@@ -3,6 +3,7 @@
   "name": "Pane Capture",
   "version": "0.1.0",
   "description": "Capture the whole page as one image, including every pane that scrolls on its own.",
+  "homepage_url": "https://github.com/Andrews-Consulting/full-page-screen-capture",
   "permissions": ["debugger", "storage"],
   "options_ui": {
     "page": "src/options.html",
