@@ -32,7 +32,8 @@ export async function serveDir(dir) {
   return { url: `http://127.0.0.1:${server.address().port}`, close: () => server.close() };
 }
 
-export async function launch({ width = 1440, height = 900, dpr = 1 } = {}) {
+/** `extension` is the folder to load: the source by default, or an unpacked store build. */
+export async function launch({ width = 1440, height = 900, dpr = 1, extension = EXTENSION } = {}) {
   const profile = await mkdtemp(join(tmpdir(), "allpanes-"));
   const context = await chromium.launchPersistentContext(profile, {
     channel: "chromium", // the full build: the headless shell cannot load extensions
@@ -43,8 +44,8 @@ export async function launch({ width = 1440, height = 900, dpr = 1 } = {}) {
     // at a different size — a test artifact, since real Chrome has no competing override.
     viewport: null,
     args: [
-      `--disable-extensions-except=${EXTENSION}`,
-      `--load-extension=${EXTENSION}`,
+      `--disable-extensions-except=${extension}`,
+      `--load-extension=${extension}`,
       `--window-size=${width},${height}`,
       `--force-device-scale-factor=${dpr}`,
     ],
@@ -100,6 +101,27 @@ export async function capture({ context, sw, page }, options = {}, { keepResult 
   if (keepResult) return { ...result, resultPage };
   await resultPage.close();
   return result;
+}
+
+/**
+ * Capture the tab showing `page` the way a user does: by firing the toolbar button's click handler.
+ * Needs no test hook, so it works on the store build. Returns the result page once it has shown the
+ * capture (`window.__capture` set) or the reason it failed.
+ */
+export async function captureByClick({ context, sw, page }) {
+  await page.bringToFront();
+  const opened = context.waitForEvent("page");
+  await sw.evaluate(async () => {
+    const [tab] = await chrome.tabs.query({ active: true });
+    chrome.action.onClicked.dispatch(tab);
+  });
+  const resultPage = await opened;
+  await resultPage.waitForFunction(
+    () => window.__capture || document.getElementById("title").textContent === "Capture failed",
+    null,
+    { timeout: 30000 },
+  );
+  return resultPage;
 }
 
 /** A stored capture's PNG, as bytes. */

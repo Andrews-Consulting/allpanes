@@ -90,6 +90,7 @@ npm test                          # fixture suite
 npm run test:site                 # your own site, from a config file (below)
 npm run icons                     # re-render the PNG icons after editing extension/icons/icon.svg
 npm run screenshots               # rebuild the Chrome Web Store screenshots in store/screenshots/
+npm run package                   # build dist/allpanes-<version>.zip for the store, then test it
 ```
 
 The store screenshots are made from `store/demo.html`, an unbranded project-tracker page whose
@@ -121,6 +122,22 @@ behind a login. Copy `test/site.example.json` to `.config/allpanes/site.json` an
 Everything under `.config/` is git-ignored, so a site's routes and its login stay out of the
 repository. To capture only some pages, name them: `node test/site.mjs /reports /settings`. To run
 at a display scale, set `DPR`: `DPR=1.25 npm run test:site`.
+
+## Publishing
+
+`npm run package` builds the Chrome Web Store upload, `dist/allpanes-<version>.zip`, with the
+version taken from `extension/manifest.json`. It contains only the `extension/` folder's files, minus
+`icons/icon.svg` (the source the PNG icons are drawn from) and the test hook in `background.js`. The
+build fails, and deletes its ZIP, if any file the extension refers to is missing.
+
+It then tests that ZIP as a user would use it, through the toolbar button rather than the test hook:
+a full capture, the page restored, both downloads, the Options page, and a restricted page. It also
+checks the ZIP's files are identical to `extension/` apart from the removed hook, so the fixture
+suite's results apply to it too.
+
+Each upload to the store needs a higher `version` in `manifest.json` than the last. The screenshots
+(`store/screenshots/`), the store icon (`extension/icons/icon-128.png`) and the listing text are
+entered in the Chrome Web Store developer dashboard, not included in the ZIP.
 
 ## License
 

@@ -1,5 +1,7 @@
 node_modules/
 test/out/
+# Store build output from npm run package.
+dist/
 # Site configs and test-account credentials for test/site.mjs. Never commit.
 .config/
 # Personal Claude Code settings and hooks.

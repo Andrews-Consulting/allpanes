@@ -75,6 +75,14 @@ async function clickAll(page, selector) {
   return clicked;
 }
 
+// If the config's loading indicator is showing, waits for it to go. False if it never did.
+async function waitWhileBusy(page) {
+  if (!config.busy) return true;
+  const busy = page.locator(config.busy).first();
+  if (!(await busy.count())) return true;
+  return busy.waitFor({ state: "detached", timeout }).then(() => true, () => false);
+}
+
 // Waits until the page's heights hold still for a second (up to 15 s), so a capture starts on a
 // finished page. "Network idle" is not enough: some pages render more content seconds after it, from
 // a worker or a timer, and a test that captured mid-change would be testing the retry, not the page.
@@ -125,11 +133,16 @@ const PAGE_STATE = `(() => ({
 async function loadPage(page, entry) {
   await page.goto(`${base}${entry.path}`);
   if (config.ready) await page.locator(config.ready).first().waitFor({ timeout });
-  if (config.busy) await page.locator(config.busy).first().waitFor({ state: "detached", timeout }).catch(() => {});
   await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(config.settleMs ?? 1500); // charts animate in
+  // Checked after the settle time, not straight away: the loading indicator itself may not have
+  // been drawn yet. And again once the page holds still, since a retried request can bring it back.
+  // A spinning indicator doesn't change the page's height, so the stable-layout wait can't see it.
+  let loaded = await waitWhileBusy(page);
   const quiet = await waitForStableLayout(page);
   if (quiet > 1500) console.log(`  note: the page kept changing for ${(quiet / 1000).toFixed(1)} s after loading`);
+  loaded &&= await waitWhileBusy(page);
+  if (!loaded) console.log(`  note: still showing ${config.busy} after ${timeout / 1000} s, so this captures a half-loaded page`);
   // After the page holds still, or the things to click may not have rendered yet.
   if (entry.clickAll) {
     console.log(`  clicked ${await clickAll(page, entry.clickAll)} × ${entry.clickAll}`);

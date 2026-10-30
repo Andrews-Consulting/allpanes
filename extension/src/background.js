@@ -258,5 +258,8 @@ async function screenshot(send, vw, vh, dpr, tileDevicePx, background) {
   return { blob: await canvas.convertToBlob({ type: "image/png" }), width, height };
 }
 
-// Test hook: the Playwright suite drives captures through this, since it cannot click the toolbar.
+// test-hook:start. scripts/package.mjs removes everything from here to test-hook:end from the
+// store build. The test suites use it to pass per-capture options (tile size, settle time) and to
+// read each capture's record; the packaged build is tested through the real toolbar click instead.
 globalThis.allPanes = { captureTab, getCapture };
+// test-hook:end

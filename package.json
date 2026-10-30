@@ -8,6 +8,8 @@
   "scripts": {
     "test": "node test/run.mjs",
     "test:site": "node test/site.mjs",
+    "test:package": "node test/package.mjs",
+    "package": "node scripts/package.mjs && node test/package.mjs",
     "icons": "node scripts/icons.mjs",
     "screenshots": "node store/screenshots.mjs"
   },
