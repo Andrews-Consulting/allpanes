@@ -1,4 +1,4 @@
-# Pane Capture
+# allPanes
 
 A Chrome extension that captures the whole page as one image, including every pane that scrolls on
 its own (sidebar, main column, side rails, fixed-height tables), not just the window's scroll.
@@ -25,14 +25,14 @@ needs:
 
 ## Install
 
-Pane Capture isn't on the Chrome Web Store; install it from this repository:
+allPanes isn't on the Chrome Web Store; install it from this repository:
 
 1. Clone or download the repository.
 2. Open `chrome://extensions` and turn on **Developer mode** (top right).
 3. Click **Load unpacked** and choose the repository's `extension` folder.
-4. Pin Pane Capture so its toolbar button stays visible.
+4. Pin allPanes so its toolbar button stays visible.
 
-To update, pull the latest changes and click the reload icon on Pane Capture in
+To update, pull the latest changes and click the reload icon on allPanes in
 `chrome://extensions`.
 
 If the repository lives in WSL and you use Chrome on Windows, load the folder through its
@@ -42,7 +42,7 @@ Windows drive and load it from there.
 ## Use
 
 Click the toolbar button, or press **Alt+Shift+S**. While it captures, the page briefly resizes and
-Chrome shows a "Pane Capture started debugging this browser" bar; both go away when it finishes.
+Chrome shows a "allPanes started debugging this browser" bar; both go away when it finishes.
 
 The capture opens in a new tab with:
 
@@ -57,7 +57,7 @@ size of the PNG on typical app screenshots, with faint halos around text up clos
 
 ## Privacy and permissions
 
-Nothing leaves your computer. Pane Capture makes no network requests and has no analytics. Each
+Nothing leaves your computer. allPanes makes no network requests and has no analytics. Each
 capture is kept in the extension's own local storage so its result tab can reload; only the 10 most
 recent are kept, and they are never uploaded.
 
@@ -65,7 +65,7 @@ It asks for two permissions:
 
 - **`debugger`**, to resize the page's viewport and take the screenshot. This is how it captures
   panes that other tools can't. Chrome's install prompt describes it broadly ("read and change all
-  your data on all websites"); Pane Capture uses it only on the tab you capture, only while
+  your data on all websites"); allPanes uses it only on the tab you capture, only while
   capturing, and detaches as soon as it's done. Chrome shows the "started debugging" bar for every
   extension that uses this permission, and an extension can't turn it off.
 - **`storage`**, for the two Options settings. They sync between your Chrome profiles if Chrome
@@ -89,7 +89,12 @@ npx playwright install chromium   # the full build; Playwright's headless shell 
 npm test                          # fixture suite
 npm run test:site                 # your own site, from a config file (below)
 npm run icons                     # re-render the PNG icons after editing extension/icons/icon.svg
+npm run screenshots               # rebuild the Chrome Web Store screenshots in store/screenshots/
 ```
+
+The store screenshots are made from `store/demo.html`, an unbranded project-tracker page whose
+sidebar, task list and details panel each scroll on their own. The script captures it with the
+real extension and lays out three 1280×800 images, so rerun it whenever the extension's UI changes.
 
 Both test suites run headless and load the real extension. Output images go to `test/out/`.
 
@@ -101,7 +106,7 @@ exactly, and tiled captures match a single screenshot pixel for pixel. It also c
 arriving mid-capture, both download formats, the Options page, and restricted pages.
 
 **Site test** (`npm run test:site`) runs the same checks against pages of a real site, optionally
-behind a login. Copy `test/site.example.json` to `.config/pane-capture/site.json` and edit it:
+behind a login. Copy `test/site.example.json` to `.config/allpanes/site.json` and edit it:
 
 - **`baseUrl`**: the site's address.
 - **`window`**: the browser window size to capture at.
@@ -119,7 +124,7 @@ at a display scale, set `DPR`: `DPR=1.25 npm run test:site`.
 
 ## License
 
-Pane Capture is free software, licensed under the
+allPanes is free software, licensed under the
 [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html). See
 [LICENSE](LICENSE) for the full text. You may use, change and share it; if you distribute a
 modified version, it must be released under the same license, with its source.

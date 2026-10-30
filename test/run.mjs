@@ -27,8 +27,8 @@ const pageState = (page) =>
     col: document.querySelector("#col").scrollTop,
     clamped: document.querySelector("#clamped").scrollTop,
     clampedStyle: document.querySelector("#clamped").getAttribute("style"),
-    marks: document.querySelectorAll("[data-pane-capture],[data-pane-capture-freed]").length,
-    agent: typeof window.__paneCapture,
+    marks: document.querySelectorAll("[data-allpanes],[data-allpanes-freed]").length,
+    agent: typeof window.__allPanes,
   }));
 
 const scenarios = [
@@ -127,6 +127,9 @@ try {
     const isPng = (b) => b.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
     const isJpeg = (b) => b.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]));
 
+    const alt = await resultPage.getAttribute("#shot", "alt");
+    check(alt.includes("allPanes fixture"), "screenshot's alt text names the captured page", alt);
+
     const png = await download("download");
     const jpeg = await download("download-alt");
     check(isPng(png.bytes) && png.name.endsWith(".png"), "main button downloads PNG by default", `${png.label} → ${png.name}`);
@@ -137,6 +140,9 @@ try {
     // Switch the default in Options; the open result page picks it up without a reload.
     const options = await browser.context.newPage();
     await options.goto(`chrome-extension://${extensionId}/src/options.html`);
+    await options.waitForFunction(() => document.getElementById("quality-value").textContent);
+    const valuetext = await options.getAttribute("#quality", "aria-valuetext");
+    check(valuetext === "70%", "quality slider announces a percentage", valuetext);
     await options.check('input[name="format"][value="jpeg"]');
     await options.waitForFunction(() => document.getElementById("status").textContent === "Saved");
     await resultPage.waitForFunction(() => document.getElementById("download").dataset.format === "jpeg");
@@ -164,6 +170,11 @@ try {
       refused.shown?.title === "Capture failed" && refused.shown.notes.includes("doesn't let extensions capture this page"),
       "chrome:// page explains why it can't be captured",
       JSON.stringify(refused.shown ?? refused),
+    );
+    check(
+      refused.shown?.heading === "H1" && refused.shown.alert.includes("doesn't let extensions capture this page"),
+      "the failure is announced to screen readers, under a real heading",
+      JSON.stringify({ heading: refused.shown?.heading, alert: refused.shown?.alert }),
     );
   } finally {
     await browser.close();

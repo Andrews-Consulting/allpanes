@@ -33,7 +33,7 @@ export async function serveDir(dir) {
 }
 
 export async function launch({ width = 1440, height = 900, dpr = 1 } = {}) {
-  const profile = await mkdtemp(join(tmpdir(), "pane-capture-"));
+  const profile = await mkdtemp(join(tmpdir(), "allpanes-"));
   const context = await chromium.launchPersistentContext(profile, {
     channel: "chromium", // the full build: the headless shell cannot load extensions
     headless: true,
@@ -74,18 +74,25 @@ export async function capture({ context, sw, page }, options = {}, { keepResult 
     const [tab] = await chrome.tabs.query({ active: true });
     let id;
     try {
-      id = await globalThis.paneCapture.captureTab(tab, opts);
+      id = await globalThis.allPanes.captureTab(tab, opts);
     } catch (err) {
       return { error: err.message };
     }
-    const { blob, ...meta } = await globalThis.paneCapture.getCapture(id);
+    const { blob, ...meta } = await globalThis.allPanes.getCapture(id);
     return { id, ...meta };
   }, options);
   const resultPage = await opened;
   if (result.error) {
     // A failed capture still opens the result page, with the explanation in place of the image.
     await resultPage.waitForFunction(() => !document.getElementById("notes").hidden, null, { timeout: 15000 });
-    result.shown = { title: await resultPage.textContent("#title"), notes: await resultPage.textContent("#notes") };
+    // The announcement lands a moment after the note, so screen readers catch it while the tab opens.
+    await resultPage.waitForFunction(() => document.getElementById("announce-alert").textContent, null, { timeout: 5000 }).catch(() => {});
+    result.shown = {
+      title: await resultPage.textContent("#title"),
+      heading: await resultPage.evaluate(() => document.getElementById("title").tagName),
+      notes: await resultPage.textContent("#notes"),
+      alert: await resultPage.textContent("#announce-alert"),
+    };
     await resultPage.close();
     return result;
   }
@@ -95,18 +102,23 @@ export async function capture({ context, sw, page }, options = {}, { keepResult 
   return result;
 }
 
-/** Write a capture's PNG to test/out/<name>.png and return the path. */
-export async function savePng(sw, id, name) {
+/** A stored capture's PNG, as bytes. */
+export async function captureBytes(sw, id) {
   const b64 = await sw.evaluate(async (captureId) => {
-    const { blob } = await globalThis.paneCapture.getCapture(captureId);
+    const { blob } = await globalThis.allPanes.getCapture(captureId);
     const bytes = new Uint8Array(await blob.arrayBuffer());
     let s = "";
     for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
     return btoa(s);
   }, id);
+  return Buffer.from(b64, "base64");
+}
+
+/** Write a capture's PNG to test/out/<name>.png and return the path. */
+export async function savePng(sw, id, name) {
   await mkdir(OUT, { recursive: true });
   const path = join(OUT, `${name}.png`);
-  await writeFile(path, Buffer.from(b64, "base64"));
+  await writeFile(path, await captureBytes(sw, id));
   return path;
 }
 
@@ -115,7 +127,7 @@ export async function diffCaptures(sw, a, b) {
   return sw.evaluate(
     async ([idA, idB]) => {
       const decode = async (id) => {
-        const { blob } = await globalThis.paneCapture.getCapture(id);
+        const { blob } = await globalThis.allPanes.getCapture(id);
         const bmp = await createImageBitmap(blob);
         const canvas = new OffscreenCanvas(bmp.width, bmp.height);
         const ctx = canvas.getContext("2d");

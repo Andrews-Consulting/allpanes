@@ -2,7 +2,7 @@
 // tens of megabytes, which is past what chrome.storage.session holds, and IndexedDB stores the Blob
 // as-is. The newest few are kept so reloading a result tab still works.
 
-const DB_NAME = "pane-capture";
+const DB_NAME = "allpanes";
 const STORE = "captures";
 const KEEP = 10;
 

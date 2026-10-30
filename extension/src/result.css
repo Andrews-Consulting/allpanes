@@ -48,7 +48,13 @@ body {
 }
 
 .meta { display: flex; flex-direction: column; min-width: 0; }
-.meta strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meta h1 {
+  margin: 0;
+  font-size: 1em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .meta span { color: var(--muted); font-size: 12px; }
 
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -78,5 +84,19 @@ button.quiet:hover { color: var(--text); }
 .notes.error { font-family: ui-monospace, monospace; white-space: pre-wrap; }
 
 .stage { padding: 16px; overflow-x: auto; }
+
+/* Hides content visually but keeps it in the accessibility tree: the screen-reader announcers on
+   the result page and the options page's heading. */
+.visually-hidden:where(:not(:focus-within, :active)) {
+  position: absolute !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
 .stage img { display: block; box-shadow: 0 1px 6px rgb(0 0 0 / 0.25); }
 .stage.fit img { max-width: 100%; height: auto; margin: 0 auto; }

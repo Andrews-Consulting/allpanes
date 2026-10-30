@@ -1,17 +1,17 @@
 // Runs INSIDE the captured page. The service worker sends `agent.toString()` over the debugger
 // protocol, so this function must be self-contained: no imports, no references to outer scope.
 //
-// It installs `window.__paneCapture`, which the service worker drives step by step:
+// It installs `window.__allPanes`, which the service worker drives step by step:
 //   measure()   – find every pane that scrolls on its own and report how much each overflows
 //   free(id)    – lift a pane's height limit so it shows all its content (for fixed-height panes
 //                 that do not grow with the window)
 //   settle(ms)  – wait for layout, resize observers, images and fonts to catch up
 //   restore()   – put every style and scroll position back exactly as it was
 export function agent() {
-  if (window.__paneCapture) return;
+  if (window.__allPanes) return;
 
-  const ID = "data-pane-capture";
-  const FREED = "data-pane-capture-freed";
+  const ID = "data-allpanes";
+  const FREED = "data-allpanes-freed";
   const SCROLLS = /auto|scroll|overlay/;
 
   // Every non-zero scroll position, recorded before anything moves. Growing the viewport clamps
@@ -156,10 +156,10 @@ export function agent() {
     // pane would glide back into place after the capture has already reported itself done.
     for (const [el, top, left] of scrolls) el.scrollTo({ top, left, behavior: "instant" });
     scrollTo({ left: windowScroll[0], top: windowScroll[1], behavior: "instant" });
-    delete window.__paneCapture;
+    delete window.__allPanes;
   }
 
-  window.__paneCapture = {
+  window.__allPanes = {
     measure,
     settle,
     restore,

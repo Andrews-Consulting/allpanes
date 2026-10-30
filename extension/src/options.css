@@ -6,25 +6,25 @@ body.options {
 fieldset {
   display: grid;
   gap: 8px;
-  margin: 0 0 18px;
+  margin: 0;
   padding: 0;
   border: 0;
 }
 
 legend,
-.quality {
+.quality label {
   font-weight: 600;
 }
 
 legend { margin-bottom: 8px; }
 
-label {
+.choice,
+.quality,
+.choice label {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
-fieldset label { font-weight: normal; }
 
 .quality input { flex: 1; max-width: 240px; }
 .quality output { min-width: 3em; font-variant-numeric: tabular-nums; }
@@ -35,10 +35,10 @@ fieldset label { font-weight: normal; }
   font-weight: normal;
 }
 
-p.hint { margin: 6px 0 0; }
+p.hint { margin: 8px 0 18px; }
 
 .status {
   min-height: 1.4em;
-  margin: 12px 0 0;
+  margin: 0;
   color: var(--accent);
 }

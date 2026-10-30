@@ -3,40 +3,45 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Pane Capture options</title>
+    <meta name="color-scheme" content="light dark" />
+    <title>allPanes options</title>
     <link rel="stylesheet" href="result.css" />
     <link rel="stylesheet" href="options.css" />
     <script type="module" src="options.js"></script>
   </head>
   <body class="options">
-    <form id="form">
-      <fieldset>
-        <legend>Main download format</legend>
-        <label>
-          <input type="radio" name="format" value="png" />
-          PNG <span class="hint">lossless and sharp, larger files</span>
-        </label>
-        <label>
-          <input type="radio" name="format" value="jpeg" />
-          JPEG <span class="hint">smaller, slightly softer text</span>
-        </label>
-      </fieldset>
+    <main>
+      <!-- Chrome titles the options dialog with the extension's name, so this one is for screen readers. -->
+      <h1 class="visually-hidden">allPanes options</h1>
+      <form id="form">
+        <fieldset aria-describedby="format-hint">
+          <legend>Main download format</legend>
+          <div class="choice">
+            <label><input type="radio" name="format" value="png" aria-describedby="png-hint" /> PNG</label>
+            <span class="hint" id="png-hint">lossless and sharp, larger files</span>
+          </div>
+          <div class="choice">
+            <label><input type="radio" name="format" value="jpeg" aria-describedby="jpeg-hint" /> JPEG</label>
+            <span class="hint" id="jpeg-hint">smaller, slightly softer text</span>
+          </div>
+        </fieldset>
+        <p class="hint" id="format-hint">
+          The result page offers both formats either way: this picks the main Download button. Copy image
+          always copies PNG, the only image format the clipboard accepts.
+        </p>
 
-      <label class="quality">
-        JPEG quality
-        <input type="range" id="quality" min="0.5" max="1" step="0.05" />
-        <output id="quality-value" for="quality"></output>
-      </label>
-      <p class="hint">
-        Lower is smaller. 85% looks the same as PNG but is only a little smaller; 70% is about half
-        the size, with faint halos around text up close; 50% shows visible smudges but stays readable.
-      </p>
+        <div class="quality">
+          <label for="quality">JPEG quality</label>
+          <input type="range" id="quality" min="0.5" max="1" step="0.05" aria-describedby="quality-hint" />
+          <output id="quality-value" for="quality"></output>
+        </div>
+        <p class="hint" id="quality-hint">
+          Lower is smaller. 85% looks the same as PNG but is only a little smaller; 70% is about half
+          the size, with faint halos around text up close; 50% shows visible smudges but stays readable.
+        </p>
 
-      <p class="hint">
-        The result page offers both formats either way: this picks the main Download button. Copy image
-        always copies PNG, the only image format the clipboard accepts.
-      </p>
-      <p id="status" class="status" role="status"></p>
-    </form>
+        <p id="status" class="status" role="status"></p>
+      </form>
+    </main>
   </body>
 </html>

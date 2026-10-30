@@ -3,14 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Pane Capture</title>
+    <meta name="color-scheme" content="light dark" />
+    <title>allPanes</title>
     <link rel="stylesheet" href="result.css" />
     <script type="module" src="result.js"></script>
   </head>
   <body>
     <header class="bar">
       <div class="meta">
-        <strong id="title">Pane Capture</strong>
+        <h1 id="title">allPanes</h1>
         <span id="dims"></span>
       </div>
       <div class="actions" id="actions" hidden>
@@ -21,9 +22,14 @@
         <button id="download" type="button" class="primary">Download PNG</button>
       </div>
     </header>
-    <p id="notes" class="notes" hidden></p>
-    <main id="stage" class="stage fit">
-      <img id="shot" alt="Full-page capture" hidden />
+    <main>
+      <p id="notes" class="notes" hidden></p>
+      <div id="stage" class="stage fit">
+        <img id="shot" alt="Full-page capture" hidden />
+      </div>
     </main>
+    <!-- Screen-reader announcements: polite for confirmations and warnings, alert for failures. -->
+    <div id="announce-polite" class="visually-hidden" aria-live="polite"></div>
+    <div id="announce-alert" class="visually-hidden" role="alert"></div>
   </body>
 </html>

@@ -30,11 +30,22 @@ async function encodeJpeg(png, quality) {
   return canvas.convertToBlob({ type: "image/jpeg", quality });
 }
 
+// Screen readers don't notice text that simply changes on screen, so status changes are also sent
+// to a live region: polite for confirmations and warnings, the alert region for failures.
+function announce(text, urgent = false) {
+  const region = $(urgent ? "announce-alert" : "announce-polite");
+  region.textContent = "";
+  // Emptied, then filled a moment later, so the same message twice is announced twice, and one made
+  // while the page is still opening isn't lost.
+  setTimeout(() => (region.textContent = text), 100);
+}
+
 function showNote(text, isError = false) {
   const notes = $("notes");
   notes.textContent = text;
   notes.classList.toggle("error", isError);
   notes.hidden = false;
+  announce(text, isError);
 }
 
 function fileName(record, ext) {
@@ -70,6 +81,7 @@ async function main() {
 
   document.title = `Capture – ${record.title || record.url}`;
   $("title").textContent = record.title || record.url;
+  img.alt = `Full-page capture of ${record.title || record.url}`;
   $("dims").textContent = `${record.width} × ${record.height} px · ${record.url}`;
   if (record.notes?.length) showNote(record.notes.join(" "));
   $("actions").hidden = false;
@@ -98,10 +110,11 @@ async function main() {
     for (const [button, format] of [[primary, main], [secondary, other]]) {
       button.dataset.format = format;
       button.textContent = `Download ${FORMATS[format].label}`;
-      blobFor(format).then((blob) => {
+      (async () => {
+        const blob = await blobFor(format);
         // A later render (settings changed meanwhile) owns the label now.
         if (render === renders) button.textContent = `Download ${FORMATS[format].label} · ${formatBytes(blob.size)}`;
-      });
+      })();
     }
   };
   renderDownloads();
@@ -128,9 +141,10 @@ async function main() {
     try {
       await navigator.clipboard.write([new ClipboardItem({ "image/png": record.blob })]);
       copy.textContent = "Copied";
+      announce("Image copied to the clipboard.");
     } catch (err) {
       copy.textContent = "Copy failed";
-      showNote(`Could not copy to the clipboard: ${err.message}`);
+      showNote(`Could not copy to the clipboard: ${err.message}`, true);
     }
     setTimeout(() => (copy.textContent = "Copy image"), 1500);
   });

@@ -20,7 +20,7 @@ const RETRY_RESIZE_SETTLE_MS = 250; // pause after each resize on the second pas
 const busy = new Set();
 
 chrome.action.onClicked.addListener((tab) => {
-  captureTab(tab).catch((err) => console.error("Pane Capture failed:", err));
+  captureTab(tab).catch((err) => console.error("allPanes capture failed:", err));
 });
 
 /** Capture `tab` and open the result in a new tab. Resolves to the capture id. */
@@ -29,7 +29,7 @@ async function captureTab(tab, options = {}) {
   busy.add(tab.id);
   const target = { tabId: tab.id };
   const send = (method, params = {}) => chrome.debugger.sendCommand(target, method, params);
-  const call = (name, ...args) => evaluate(send, `window.__paneCapture.${name}(${args.map((a) => JSON.stringify(a)).join(",")})`);
+  const call = (name, ...args) => evaluate(send, `window.__allPanes.${name}(${args.map((a) => JSON.stringify(a)).join(",")})`);
 
   await chrome.action.setBadgeText({ tabId: tab.id, text: "…" }).catch(() => {});
   let shot = null;
@@ -259,4 +259,4 @@ async function screenshot(send, vw, vh, dpr, tileDevicePx, background) {
 }
 
 // Test hook: the Playwright suite drives captures through this, since it cannot click the toolbar.
-globalThis.paneCapture = { captureTab, getCapture };
+globalThis.allPanes = { captureTab, getCapture };

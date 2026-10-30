@@ -4,3 +4,6 @@ test/out/
 .config/
 # Personal Claude Code settings and hooks.
 .claude/
+# Locally installed agent skills (Chrome extensions, modern web guidance) and their lock file.
+.agents/
+skills-lock.json

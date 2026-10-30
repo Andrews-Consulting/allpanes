@@ -4,7 +4,7 @@
 //
 //   node test/site.mjs [config.json] [path ...]
 //
-// The config defaults to .config/pane-capture/site.json. Everything under .config/ is git-ignored,
+// The config defaults to .config/allpanes/site.json. Everything under .config/ is git-ignored,
 // so a site's routes and its login live there, never in the repo. test/site.example.json documents
 // the fields. Paths on the command line replace the config's page list (keeping any per-page
 // settings the config has for them). DPR=1.25 runs at that display scale.
@@ -17,7 +17,7 @@ import { dirname, join, resolve } from "node:path";
 import { ROOT, launch, capture, savePng, diffCaptures, checker } from "./harness.mjs";
 
 const args = process.argv.slice(2);
-const configPath = resolve(args[0]?.endsWith(".json") ? args.shift() : join(ROOT, ".config", "pane-capture", "site.json"));
+const configPath = resolve(args[0]?.endsWith(".json") ? args.shift() : join(ROOT, ".config", "allpanes", "site.json"));
 if (!existsSync(configPath)) {
   console.error(`No site config at ${configPath}. Copy test/site.example.json there and edit it.`);
   process.exit(2);
@@ -118,8 +118,8 @@ const SCROLL_ALL = `(() => {
 const PAGE_STATE = `(() => ({
   vh: innerHeight,
   scrolls: (window.__siteTestScrollers || []).map((el) => el.scrollTop).join(","),
-  marks: document.querySelectorAll("[data-pane-capture],[data-pane-capture-freed]").length,
-  agent: typeof window.__paneCapture,
+  marks: document.querySelectorAll("[data-allpanes],[data-allpanes-freed]").length,
+  agent: typeof window.__allPanes,
 }))()`;
 
 async function loadPage(page, entry) {

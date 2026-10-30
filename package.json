@@ -1,14 +1,15 @@
 {
-  "name": "pane-capture",
+  "name": "allpanes",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.1",
   "description": "Chrome extension that captures a full page, including every independently scrolling pane, as one image.",
   "license": "GPL-3.0-only",
   "type": "module",
   "scripts": {
     "test": "node test/run.mjs",
     "test:site": "node test/site.mjs",
-    "icons": "node scripts/icons.mjs"
+    "icons": "node scripts/icons.mjs",
+    "screenshots": "node store/screenshots.mjs"
   },
   "devDependencies": {
     "playwright": "1.63.0"

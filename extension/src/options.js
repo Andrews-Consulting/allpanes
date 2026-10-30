@@ -5,7 +5,12 @@ const quality = document.getElementById("quality");
 const qualityValue = document.getElementById("quality-value");
 const status = document.getElementById("status");
 
-const showQuality = () => (qualityValue.textContent = `${Math.round(Number(quality.value) * 100)}%`);
+const showQuality = () => {
+  const percent = `${Math.round(Number(quality.value) * 100)}%`;
+  qualityValue.textContent = percent;
+  // Otherwise screen readers read the raw value, "0.7".
+  quality.setAttribute("aria-valuetext", percent);
+};
 
 let clearStatus;
 // Saved on `change`, not `input`: dragging the slider fires dozens of inputs, and chrome.storage.sync
