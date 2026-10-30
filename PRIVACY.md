@@ -2,7 +2,7 @@
 
 Last updated: October 30, 2026
 
-allPanes is a Chrome extension made by Andrews Consulting. It takes screenshots of web pages,
+allPanes is a Chrome extension made by Andrews Consulting LLC. It takes screenshots of web pages,
 including the content of every area on the page that scrolls on its own. This policy explains what
 it does with your information. In short: everything stays on your computer.
 
