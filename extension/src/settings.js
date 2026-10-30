@@ -1,5 +1,9 @@
-// User preferences, synced across the user's Chrome profiles. Read by the result page (which format
-// the main Download button uses, and the JPEG quality) and edited on the options page.
+// User preferences, kept in this browser only. Read by the result page (which format the main
+// Download button uses, and the JPEG quality) and edited on the options page.
+//
+// chrome.storage.local, not .sync: synced settings travel through Google's servers when Chrome sync
+// is on, and allPanes promises that nothing leaves the computer. Two settings aren't worth breaking
+// that promise for.
 
 export const DEFAULTS = {
   format: "png", // "png" | "jpeg"
@@ -9,9 +13,14 @@ export const DEFAULTS = {
 };
 
 export async function loadSettings() {
-  return { ...DEFAULTS, ...(await chrome.storage.sync.get(DEFAULTS)) };
+  return { ...DEFAULTS, ...(await chrome.storage.local.get(DEFAULTS)) };
 }
 
 export function saveSettings(settings) {
-  return chrome.storage.sync.set(settings);
+  return chrome.storage.local.set(settings);
+}
+
+/** Calls `listener` whenever the settings change, from the options page or anywhere else. */
+export function onSettingsChanged(listener) {
+  chrome.storage.local.onChanged.addListener(listener);
 }

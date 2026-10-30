@@ -13,8 +13,8 @@ const showQuality = () => {
 };
 
 let clearStatus;
-// Saved on `change`, not `input`: dragging the slider fires dozens of inputs, and chrome.storage.sync
-// allows only so many writes a minute.
+// Saved on `change`, not `input`: dragging the slider fires dozens of inputs, and each save would
+// re-encode the JPEG on any open result page.
 form.addEventListener("change", async () => {
   await saveSettings({ format: form.elements.format.value, jpegQuality: Number(quality.value) });
   status.textContent = "Saved";

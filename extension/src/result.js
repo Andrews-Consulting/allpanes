@@ -1,5 +1,5 @@
 import { getCapture } from "./store.js";
-import { loadSettings } from "./settings.js";
+import { loadSettings, onSettingsChanged } from "./settings.js";
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -118,8 +118,7 @@ async function main() {
     }
   };
   renderDownloads();
-  chrome.storage.onChanged.addListener(async (_changes, area) => {
-    if (area !== "sync") return;
+  onSettingsChanged(async () => {
     settings = await loadSettings();
     renderDownloads();
   });

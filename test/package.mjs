@@ -81,9 +81,13 @@ try {
     const result = await captureByClick(browser);
     const shot = await result.evaluate(() => window.__capture);
     check(shot?.residual === 0 && shot.height > 3 * before.vh, "toolbar click captures every pane", JSON.stringify(shot));
-    await page.waitForFunction((h) => innerHeight === h, before.vh, { timeout: 5000 }).catch(() => {});
+    // Back to the captured page: Chrome may not resize a background tab when its "started
+    // debugging" bar goes, so its viewport would still read 56 px short.
+    await page.bringToFront();
+    await page.waitForFunction((h) => innerHeight === h, before.vh, { timeout: 10000 }).catch(() => {});
     const after = await state();
     check(JSON.stringify(after) === JSON.stringify(before), "page restored afterwards", JSON.stringify({ before, after }));
+    await result.bringToFront();
 
     // Both downloads produce real files of their format.
     const download = async (id) => {

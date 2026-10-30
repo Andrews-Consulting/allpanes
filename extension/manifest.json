@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "allPanes",
   "version": "1.0.1",
-  "description": "Capture the whole page as one image, including every pane that scrolls on its own.",
+  "description": "Screenshot the whole page, including every pane that scrolls on its own: sidebars, panels and scrolling tables, in one image.",
   "homepage_url": "https://github.com/Andrews-Consulting/allpanes",
   "permissions": ["debugger", "storage"],
   "options_ui": {

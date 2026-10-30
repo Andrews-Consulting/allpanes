@@ -68,8 +68,9 @@ It asks for two permissions:
   your data on all websites"); allPanes uses it only on the tab you capture, only while
   capturing, and detaches as soon as it's done. Chrome shows the "started debugging" bar for every
   extension that uses this permission, and an extension can't turn it off.
-- **`storage`**, for the two Options settings. They sync between your Chrome profiles if Chrome
-  sync is on, like any extension setting.
+- **`storage`**, for the two Options settings. They're kept in this browser only, never synced.
+
+The full privacy policy is in [PRIVACY.md](PRIVACY.md).
 
 ## Limits
 
