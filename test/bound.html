@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>allPanes bound fixture</title>
+<!--
+  A web-app shell whose main column's content is sized to the window: a full-height flex column of
+  top bars (140 px in all) and an app row, whose main pane wraps its page in `min-height: 100vh`.
+  The pane is 140 px shorter than the window, its wrapper exactly as tall, so it overflows by 140 px
+  however tall the window gets. A footer pinned to the wrapper's bottom sits in that hidden strip.
+
+  Variants, by query string:
+    (none)       the wrapper is min-height: 100vh; lifting it lets the pane size to its content
+    ?offset=20   min-height: calc(100vh + 20px); nothing can be lifted, so the pane is given up on
+    ?tall=2500   2500 px of content, taller than the window, so the overflow does shrink at first
+                 and the pane only becomes bound once the window has grown past its content
+    ?doc=1       the app row is height: 100vh under the bars, so the DOCUMENT overflows by 140 px
+-->
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; height: 100vh; display: flex; flex-direction: column; font: 14px/1.4 system-ui, sans-serif; color: #111; }
+  body.doc { height: auto; }
+  .bar { flex: none; padding: 0 16px; display: flex; align-items: center; }
+  .topbar { height: 40px; background: #1e3a8a; color: #fff; }
+  .banner { height: 60px; background: #fbbf24; }
+  .crumbs { height: 40px; background: #f3f4f6; border-bottom: 1px solid #d1d5db; }
+  .app { flex: 1; min-height: 0; display: flex; }
+  body.doc .app { height: 100vh; }
+  aside { width: 240px; flex: none; display: flex; flex-direction: column; background: #e8ecf8; border-right: 1px solid #c5cbe0; }
+  nav { flex: 1; min-height: 0; overflow-y: auto; }
+  nav div { padding: 6px 16px; border-bottom: 1px solid #d6dbec; }
+  main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-y: auto; }
+  .page { min-height: 100vh; padding: 24px; display: flex; flex-direction: column; }
+  body.offset .page { min-height: calc(100vh + 20px); }
+  .row { padding: 8px 12px; border-bottom: 1px solid #eee; }
+  .end { padding: 12px; font-weight: 700; background: #dcfce7; }
+  footer { margin-top: auto; padding: 12px; font-weight: 700; background: #fecaca; }
+</style>
+</head>
+<body>
+<div class="bar topbar">Top bar</div>
+<div class="bar banner">Banner</div>
+<div class="bar crumbs">Breadcrumbs</div>
+<div class="app">
+  <aside><nav id="nav"></nav></aside>
+  <main id="main">
+    <div class="page">
+      <div id="content"></div>
+      <footer id="footer">PINNED FOOTER</footer>
+    </div>
+  </main>
+</div>
+<script>
+  const params = new URLSearchParams(location.search);
+  for (const flag of ["offset", "doc"]) if (params.has(flag)) document.body.classList.add(flag);
+  const rows = (parent, n, label, cls = "row") => {
+    for (let i = 1; i <= n; i++) {
+      const d = document.createElement("div");
+      d.className = cls;
+      d.textContent = `${label} ${i}`;
+      parent.append(d);
+    }
+  };
+  const end = (parent, text) => {
+    const d = document.createElement("div");
+    d.className = "end";
+    d.textContent = text;
+    parent.append(d);
+  };
+  const nav = document.getElementById("nav");
+  rows(nav, 60, "Nav item", "");
+  end(nav, "END OF NAV");
+
+  const content = document.getElementById("content");
+  const tall = Number(params.get("tall") ?? 0);
+  rows(content, tall ? Math.round(tall / 35) : 6, "Main row");
+  end(content, "END OF MAIN");
+</script>
+</body>
+</html>

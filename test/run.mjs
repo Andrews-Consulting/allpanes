@@ -109,6 +109,72 @@ try {
       await browser.close();
     }
   }
+  // Content bound to the window: test/bound.html's main pane overflows by the same 140 px at every
+  // height. A real app with this layout came out 6239 px tall, every round adding the same 266 px,
+  // with nothing below 919. The capture must lift the window-sized height so the pane shows all of
+  // its content (its pinned footer included), or give the pane up, and never chase it.
+  const boundScenarios = [
+    { name: "bound-pane", query: "", lifted: true },
+    { name: "bound-pane-unliftable", query: "?offset=20", lifted: false },
+    { name: "bound-pane-after-growth", query: "?tall=2500", lifted: true },
+    { name: "bound-document", query: "?doc=1", lifted: true },
+  ];
+  for (const s of boundScenarios) {
+    console.log(`\n${s.name}`);
+    const browser = await launch();
+    try {
+      const { page } = browser;
+      await page.goto(`${server.url}/bound.html${s.query}`);
+      const before = await page.evaluate(() => ({
+        vh: innerHeight,
+        pageStyle: document.querySelector(".page").getAttribute("style"),
+        appStyle: document.querySelector(".app").getAttribute("style"),
+        marks: document.querySelectorAll("[data-allpanes],[data-allpanes-freed]").length,
+        agent: typeof window.__allPanes,
+      }));
+      const shot = await capture(browser);
+      const png = await savePng(browser.sw, shot.id, s.name);
+      console.log(`  ${shot.width}×${shot.height} device px, ${shot.cssHeight} CSS px tall → ${png}`);
+      const expected = await page.evaluate((lifted) => {
+        const bars = 140;
+        const nav = document.getElementById("nav").scrollHeight;
+        // With its 100vh wrapper lifted, the main pane needs its content, padding and footer.
+        // Exact rects, not offsetHeight: rows are 36.6 px tall, and rounding each one over-counts.
+        const h = (id) => document.getElementById(id).getBoundingClientRect().height;
+        const main = lifted ? h("content") + h("footer") + 48 : 0;
+        return Math.floor(Math.max(nav, main) + bars);
+      }, s.lifted);
+      const bound = shot.trace.flatMap((t) => t.bound ?? []);
+      const rounds = shot.trace.filter((t) => t.height !== undefined).length;
+
+      check(bound.length === 1, "the bound pane was detected once", JSON.stringify(bound));
+      check(
+        s.lifted ? bound[0]?.unbound > 0 && shot.stuck === 0 : bound[0]?.unbound === 0 && shot.stuck === 1,
+        s.lifted ? "its window-sized height was lifted" : "nothing to lift, so it was given up",
+        JSON.stringify({ bound, stuck: shot.stuck }),
+      );
+      check(shot.residual === 0 && shot.notes.length === 0, "nothing reported as cut off", JSON.stringify(shot.notes));
+      check(!shot.retried && rounds <= 5, "settled in a few rounds, no retry", `${rounds} rounds, retried ${shot.retried}`);
+      check(
+        shot.cssHeight >= expected && shot.cssHeight <= expected + 2,
+        "image height matches the content (no runaway growth, no blank band)",
+        `expected ${expected}, got ${shot.cssHeight}`,
+      );
+      await page.waitForFunction((h) => innerHeight === h, before.vh, { timeout: 5000 }).catch(() => {});
+      const after = await page.evaluate(() => ({
+        vh: innerHeight,
+        pageStyle: document.querySelector(".page").getAttribute("style"),
+        appStyle: document.querySelector(".app").getAttribute("style"),
+        marks: document.querySelectorAll("[data-allpanes],[data-allpanes-freed]").length,
+        agent: typeof window.__allPanes,
+      }));
+      const restored = JSON.stringify(after) === JSON.stringify(before);
+      check(restored, "page restored exactly", restored ? "" : JSON.stringify({ before, after }));
+    } finally {
+      await browser.close();
+    }
+  }
+
   // Download formats: both buttons, the Options page switching which one is main, and JPEG quality.
   console.log("\ndownload formats");
   const browser = await launch();

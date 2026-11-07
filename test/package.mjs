@@ -34,9 +34,9 @@ try {
   }
   console.log(`testing ${relative(ROOT, zip)}`);
 
-  // Same files as the source, byte for byte, except the leftover icon source and the stripped hook.
+  // Same files as the source, byte for byte, except the icon sources (SVGs) and the stripped hook.
   const built = await listFiles(unpacked);
-  const source = (await listFiles(EXTENSION)).filter((f) => f !== "icons/icon.svg");
+  const source = (await listFiles(EXTENSION)).filter((f) => !/^icons\/.*\.svg$/.test(f));
   check(JSON.stringify(built) === JSON.stringify(source), "ZIP holds the extension's files and nothing else", `${built.length} files`);
   const differing = [];
   for (const f of built) {

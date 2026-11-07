@@ -18,9 +18,13 @@ needs:
    flex layouts, `calc(100vh - …)` side panels) and which have a fixed height (`max-height` tables).
 3. It lifts the height limit on the fixed-height panes and sizes the window exactly to fit
    everything, with no blank band at the bottom.
-4. If anything still overflows, usually because the page was still loading, it waits 1.5 seconds
-   and runs steps 1–3 once more.
-5. It takes one screenshot, in tiles if it is very tall, then puts every style and scroll position
+4. A pane whose content is itself sized to the window (a `min-height: 100vh` page wrapper in a
+   column that sits below a header) overflows by the same amount at every height. It lifts that
+   window-sized height so the pane can be sized to its content, or, if it can't find one to lift,
+   leaves the pane out of the height rather than growing for it round after round.
+5. If anything still overflows, usually because the page was still loading, it waits 1.5 seconds
+   and runs steps 1–4 once more.
+6. It takes one screenshot, in tiles if it is very tall, then puts every style and scroll position
    back.
 
 ## Install
@@ -89,7 +93,7 @@ npm install
 npx playwright install chromium   # the full build; Playwright's headless shell can't load extensions
 npm test                          # fixture suite
 npm run test:site                 # your own site, from a config file (below)
-npm run icons                     # re-render the PNG icons after editing extension/icons/icon.svg
+npm run icons                     # re-render the PNG icons after editing an SVG in extension/icons/
 npm run screenshots               # rebuild the Chrome Web Store screenshots in store/screenshots/
 npm run package                   # build dist/allpanes-<version>.zip for the store, then test it
 ```
@@ -105,7 +109,10 @@ main column that each scroll, a sticky header, a window-sized side rail, a fixed
 floating button and a hidden drawer. It checks at 100%, 110% and 150% display scale that every pane
 comes out fully expanded, the image is exactly as tall as the tallest pane, the page is restored
 exactly, and tiled captures match a single screenshot pixel for pixel. It also covers content
-arriving mid-capture, both download formats, the Options page, and restricted pages.
+arriving mid-capture, both download formats, the Options page, and restricted pages. A second page,
+`test/bound.html`, has a main column whose content is sized to the window (the layout that once
+produced a 6,239 px capture of 919 px of content); it checks that the pane is sized to its content
+or given up on, for a pane and for the document itself, and never chased.
 
 **Site test** (`npm run test:site`) runs the same checks against pages of a real site, optionally
 behind a login. Copy `test/site.example.json` to `.config/allpanes/site.json` and edit it:
@@ -128,7 +135,7 @@ at a display scale, set `DPR`: `DPR=1.25 npm run test:site`.
 
 `npm run package` builds the Chrome Web Store upload, `dist/allpanes-<version>.zip`, with the
 version taken from `extension/manifest.json`. It contains only the `extension/` folder's files, minus
-`icons/icon.svg` (the source the PNG icons are drawn from) and the test hook in `background.js`. The
+the icon SVGs (the sources the PNG icons are drawn from) and the test hook in `background.js`. The
 build fails, and deletes its ZIP, if any file the extension refers to is missing.
 
 It then tests that ZIP as a user would use it, through the toolbar button rather than the test hook:

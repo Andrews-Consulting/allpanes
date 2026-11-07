@@ -6,7 +6,10 @@ import { putCapture, getCapture } from "./store.js";
 // the tallest pane needs. Panes sized to the window (h-dvh flex shells, calc(100vh - …) rails) then
 // show all their content with nothing scrolled, and one screenshot captures the lot. Panes with a
 // fixed height (max-h-80 tables) do not grow with the window, so their height limit is lifted for
-// the duration of the capture. Everything is put back afterwards.
+// the duration of the capture. A pane whose *content* is sized to the window (a min-h-screen page
+// wrapper in a column below a header) overflows by the same amount at every height; its window-sized
+// heights are lifted too, or, when none can be found, it is left out of the height rather than
+// chased forever. Everything is put back afterwards.
 
 const PROTOCOL_VERSION = "1.3";
 const PROBE_PX = 200; // how far to grow the window to learn which panes follow its height
@@ -16,6 +19,7 @@ const TILE_DEVICE_PX = 8000; // GPU-composited screenshots much past 16k device 
 const SETTLE_MS = 700; // charts re-render and lazy images load after the resize
 const RETRY_WAIT_MS = 1500; // before the second pass, when the first left something overflowing
 const RETRY_RESIZE_SETTLE_MS = 250; // pause after each resize on the second pass, for slow layouts
+const DOC = "doc"; // the document's own overflow, where a pane id is expected
 
 const busy = new Set();
 
@@ -120,32 +124,70 @@ async function expandAndCapture(send, call, options) {
   // How much a pane's height changes per pixel of window height: ~1 for a flex pane in a
   // full-height shell, 0.55 for a 55vh modal body, 0 for a fixed max-h-80 table.
   const ratios = new Map();
+  // Panes (by id), or the document itself (DOC), given up on: their overflow stayed the same after
+  // the window grew, so their content is sized to the window, and unbind() found nothing to lift.
+  // Growing for them would add the same blank band every round until MAX_ROUNDS ran out, so they
+  // are left out of the height instead. What they hide is the bottom of a wrapper that is only as
+  // tall as the window, not content.
+  const stuck = new Set();
   // What each round saw and did, kept on the capture record for diagnosing one that came out short.
   const trace = [];
+
+  const overflowOf = (m, id) => (id === DOC ? m.docOverflow : m.panes.find((p) => p.id === id)?.overflow);
+
+  // `before` and `after` are measurements taken with the window grown in between. Anything among
+  // `ids` that still overflows by the same amount is bound to the window. Lift the window-sized
+  // heights off it so the next rounds can size it to its content, or give up on it when there are
+  // none. Returns what was found, for the trace.
+  const findBound = async (ids, before, after) => {
+    const found = [];
+    for (const id of ids) {
+      const was = overflowOf(before, id);
+      const now = overflowOf(after, id);
+      if (was === undefined || now === undefined || now <= 1 || Math.abs(now - was) > 1) continue;
+      const unbound = await call("unbind", id === DOC ? null : id);
+      if (!unbound) stuck.add(id);
+      found.push({ id, unbound });
+    }
+    return found;
+  };
 
   // Grow the window and free fixed-height panes until nothing overflows, or MAX_ROUNDS run out.
   const expand = async () => {
     let m = await call("measure");
     for (let round = 0; round < MAX_ROUNDS; round++) {
-      const todo = m.panes.filter((p) => p.overflow > 1 && !p.freed);
+      const todo = m.panes.filter((p) => p.overflow > 1 && !p.freed && !stuck.has(p.id));
+      const docNeed = stuck.has(DOC) ? 0 : Math.max(0, m.docOverflow);
       const step = { height, docOverflow: m.docOverflow, todo: todo.map((p) => `${p.id}:${p.overflow}/${p.client}`) };
       trace.push(step);
 
-      if (todo.some((p) => !ratios.has(p.id)) && height < maxHeight) {
+      const unknown = todo.filter((p) => !ratios.has(p.id));
+      if (unknown.length && height < maxHeight) {
         const base = height;
         await setHeight(base + PROBE_PX);
         const probe = await call("measure");
         const grown = height - base;
-        for (const p of todo) {
-          if (ratios.has(p.id)) continue;
+        for (const p of unknown) {
           const after = probe.panes.find((q) => q.id === p.id);
           ratios.set(p.id, after ? (after.client - p.client) / grown : 0);
         }
+        // A pane that grew with the window yet overflows exactly as before has content bound to it.
+        const bound = await findBound(
+          unknown.filter((p) => ratios.get(p.id) >= 0.02).map((p) => p.id),
+          m,
+          probe,
+        );
         // Back to the measured height, so the growth below is exact and leaves no blank band.
         await setHeight(base);
+        if (bound.length) {
+          step.bound = bound;
+          m = await call("measure");
+          continue;
+        }
       }
 
-      let need = Math.max(0, m.docOverflow);
+      const demands = new Map(); // what each pane, and the document, asks the window to grow by
+      if (docNeed > 1) demands.set(DOC, docNeed);
       let freed = 0;
       for (const p of todo) {
         const ratio = ratios.get(p.id) ?? 0;
@@ -153,14 +195,32 @@ async function expandAndCapture(send, call, options) {
           await call("free", p.id);
           freed++;
         } else {
-          need = Math.max(need, p.overflow / Math.min(ratio, 1));
+          demands.set(p.id, p.overflow / Math.min(ratio, 1));
         }
       }
+      const need = Math.max(0, ...demands.values());
       Object.assign(step, { ratios: todo.map((p) => `${p.id}:${(ratios.get(p.id) ?? 0).toFixed(2)}`), need: Math.round(need), freed });
       if (need <= 1 && !freed && !m.changed) break;
-      if (need > 1 && height < maxHeight) await setHeight(height + need);
-      else await call("settle", resizeSettleMs);
-      m = await call("measure");
+      if (need > 1 && height < maxHeight) {
+        const base = height;
+        await setHeight(base + need);
+        const after = await call("measure");
+        // Whatever the growth did nothing for was bound to the window all along: a pane whose
+        // content had only just stopped being taller than the window, or the document. Take back
+        // the growth that was for it alone.
+        const bound = await findBound([...demands.keys()], m, after);
+        if (bound.length) {
+          step.bound = bound;
+          const rest = Math.max(0, ...[...demands].filter(([id]) => !bound.some((b) => b.id === id)).map(([, px]) => px));
+          if (rest + 1 < need) await setHeight(base + rest);
+          m = await call("measure");
+        } else {
+          m = after;
+        }
+      } else {
+        await call("settle", resizeSettleMs);
+        m = await call("measure");
+      }
     }
   };
 
@@ -168,7 +228,9 @@ async function expandAndCapture(send, call, options) {
   const finalMeasure = async () => {
     await call("settle", options.settleMs ?? SETTLE_MS);
     const m = await call("measure");
-    return { m, residual: m.panes.filter((p) => p.overflow > 1).length + (m.docOverflow > 1 ? 1 : 0) };
+    const residual =
+      m.panes.filter((p) => p.overflow > 1 && !stuck.has(p.id)).length + (m.docOverflow > 1 && !stuck.has(DOC) ? 1 : 0);
+    return { m, residual };
   };
 
   await expand();
@@ -184,6 +246,8 @@ async function expandAndCapture(send, call, options) {
     trace.push({ retry: `${residual} still overflowing; waiting ${RETRY_WAIT_MS} ms` });
     await call("settle", RETRY_WAIT_MS);
     for (const p of m.panes) if (p.overflow > 1) ratios.delete(p.id);
+    // Something given up on may have been mid-render too; it gets looked at again as well.
+    stuck.clear();
     resizeSettleMs = RETRY_RESIZE_SETTLE_MS;
     await expand();
     ({ m, residual } = await finalMeasure());
@@ -204,6 +268,7 @@ async function expandAndCapture(send, call, options) {
     cssHeight: height,
     panes: m.panes.length,
     residual,
+    stuck: stuck.size,
     retried,
     notes,
     trace,

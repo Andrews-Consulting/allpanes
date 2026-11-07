@@ -1,7 +1,7 @@
 {
   "name": "allpanes",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Chrome extension that captures a full page, including every independently scrolling pane, as one image.",
   "license": "GPL-3.0-only",
   "type": "module",

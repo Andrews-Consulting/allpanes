@@ -1,5 +1,5 @@
 // Builds the Chrome Web Store upload, dist/allpanes-<version>.zip, from extension/:
-//   - icons/icon.svg is left out: it's only the source the PNG icons are drawn from.
+//   - The icon SVGs are left out: they're only the sources the PNG icons are drawn from.
 //   - The test hook is removed from background.js: only the test suites use it.
 // Then checks the ZIP: manifest.json at its top level, and every file the manifest, the pages and
 // the scripts refer to present in it. A build that fails any check deletes its ZIP, so dist/ never
@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = join(ROOT, "extension");
 const DIST = join(ROOT, "dist");
-const LEAVE_OUT = new Set(["icons/icon.svg"]);
+const LEAVE_OUT = new Set(["icons/icon.svg", "icons/icon-16.svg"]);
 
 const manifest = JSON.parse(await readFile(join(SRC, "manifest.json"), "utf8"));
 const zipPath = join(DIST, `allpanes-${manifest.version}.zip`);

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <!-- The 16 px toolbar icon: icon.svg's design redrawn on the pixel grid, every line one whole
+       pixel wide, because scaling the large drawing down blurs its thin lines into pale smudges. -->
+  <rect width="16" height="16" rx="3.25" fill="#2563eb"/>
+  <g fill="#ffffff" shape-rendering="crispEdges">
+    <!-- viewfinder corners -->
+    <rect x="1" y="1" width="4" height="1"/><rect x="1" y="1" width="1" height="4"/>
+    <rect x="11" y="1" width="4" height="1"/><rect x="14" y="1" width="1" height="4"/>
+    <rect x="1" y="14" width="4" height="1"/><rect x="1" y="11" width="1" height="4"/>
+    <rect x="11" y="14" width="4" height="1"/><rect x="14" y="11" width="1" height="4"/>
+    <!-- the window -->
+    <rect x="3" y="3" width="10" height="10"/>
+  </g>
+  <g fill="#2563eb" shape-rendering="crispEdges">
+    <!-- two dividers make three panes, 2, 4 and 2 pixels wide -->
+    <rect x="5" y="3" width="1" height="10"/><rect x="10" y="3" width="1" height="10"/>
+    <!-- the arrow down the middle pane -->
+    <rect x="7" y="4" width="2" height="5"/>
+    <rect x="6" y="9" width="4" height="1"/>
+    <rect x="7" y="10" width="2" height="1"/>
+  </g>
+</svg>

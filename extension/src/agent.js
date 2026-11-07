@@ -5,6 +5,9 @@
 //   measure()   – find every pane that scrolls on its own and report how much each overflows
 //   free(id)    – lift a pane's height limit so it shows all its content (for fixed-height panes
 //                 that do not grow with the window)
+//   unbind(id)  – lift window-sized heights (min-height: 100vh, height: 100%) off a pane's
+//                 descendants, or the whole page's for null, so its content stops growing with the
+//                 window; see "bound" in background.js
 //   settle(ms)  – wait for layout, resize observers, images and fonts to catch up
 //   restore()   – put every style and scroll position back exactly as it was
 export function agent() {
@@ -22,7 +25,8 @@ export function agent() {
   }
   const windowScroll = [scrollX, scrollY];
 
-  const styles = []; // [element, original style attribute] for everything free() touched
+  const styles = []; // [element, original style attribute] for everything free() or unbind() touched
+  const unbound = new Set(); // elements unbind() has already handled
   let pending = []; // ancestor chains to re-check after free(), see measure()
   let nextId = 1;
   let changed = false;
@@ -73,6 +77,33 @@ export function agent() {
       s.setProperty("align-self", "start", "important");
     }
     changed = true;
+  }
+
+  // A pane whose content is sized to the window (a min-h-screen page wrapper inside a column that
+  // sits below a header) overflows by the same amount however tall the window gets. Take the
+  // window-sized heights off its descendants so the content takes its natural height and the pane
+  // can be sized to it. `root` null does the same for the whole page, when the document itself is
+  // the one overflowing by a constant.
+  function unbind(root) {
+    const vh = innerHeight;
+    let count = 0;
+    for (const el of (root ?? document.body).querySelectorAll("*")) {
+      if (unbound.has(el) || el.hasAttribute(FREED)) continue;
+      const cs = getComputedStyle(el);
+      // Overlays and drawers are sized to the window on purpose and do not push anything.
+      if (cs.position === "fixed" || cs.position === "absolute") continue;
+      const minHeight = Math.abs(parseFloat(cs.minHeight) - vh) <= 2; // min-height: 100vh / 100dvh
+      const height = Math.abs(parseFloat(cs.height) - vh) <= 2; // height: 100vh, or 100% of one
+      if (!minHeight && !height) continue;
+      unbound.add(el);
+      styles.push([el, el.getAttribute("style")]);
+      // "auto", not 0: as a flex item the element would otherwise shrink below its content.
+      if (minHeight) el.style.setProperty("min-height", "auto", "important");
+      if (height) el.style.setProperty("height", "auto", "important");
+      count++;
+    }
+    if (count) changed = true;
+    return count;
   }
 
   function measure() {
@@ -166,6 +197,11 @@ export function agent() {
     free: (id) => {
       const el = document.querySelector(`[${ID}="${id}"]`);
       if (el) free(el);
+    },
+    unbind: (id) => {
+      if (id === null) return unbind(null);
+      const el = document.querySelector(`[${ID}="${id}"]`);
+      return el ? unbind(el) : 0;
     },
   };
 }
