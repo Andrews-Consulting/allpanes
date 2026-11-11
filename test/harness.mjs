@@ -32,9 +32,21 @@ export async function serveDir(dir) {
   return { url: `http://127.0.0.1:${server.address().port}`, close: () => server.close() };
 }
 
-/** `extension` is the folder to load: the source by default, or an unpacked store build. */
-export async function launch({ width = 1440, height = 900, dpr = 1, extension = EXTENSION } = {}) {
+/**
+ * `extension` is the folder to load: the source by default, or an unpacked store build.
+ * `devtools` opens DevTools on every tab, docked where it says ("right", "bottom" or "undocked").
+ * It docks in a headless window too, so no display is needed.
+ */
+export async function launch({ width = 1440, height = 900, dpr = 1, extension = EXTENSION, devtools = null } = {}) {
   const profile = await mkdtemp(join(tmpdir(), "allpanes-"));
+  if (devtools) {
+    // Chrome keeps the dock side in the profile; DevTools opens where the previous session left it.
+    await mkdir(join(profile, "Default"), { recursive: true });
+    await writeFile(
+      join(profile, "Default", "Preferences"),
+      JSON.stringify({ devtools: { preferences: { currentDockState: JSON.stringify(devtools) } } }),
+    );
+  }
   const context = await chromium.launchPersistentContext(profile, {
     channel: "chromium", // the full build: the headless shell cannot load extensions
     headless: true,
@@ -48,6 +60,7 @@ export async function launch({ width = 1440, height = 900, dpr = 1, extension = 
       `--load-extension=${extension}`,
       `--window-size=${width},${height}`,
       `--force-device-scale-factor=${dpr}`,
+      ...(devtools ? ["--auto-open-devtools-for-tabs"] : []),
     ],
   });
   let [sw] = context.serviceWorkers();

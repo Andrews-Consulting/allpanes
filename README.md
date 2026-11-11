@@ -48,6 +48,10 @@ Windows drive and load it from there.
 Click the toolbar button, or press **Alt+Shift+S**. While it captures, the page briefly resizes and
 Chrome shows a "allPanes started debugging this browser" bar; both go away when it finishes.
 
+If DevTools or Chrome's side panel is docked beside the page, the page has only part of the window
+and a responsive layout has already narrowed to fit. The capture is taken at the window's full width
+instead, so it shows the page as it looks without the panel.
+
 The capture opens in a new tab with:
 
 - **Copy image**, which copies a PNG (the only image format the clipboard accepts).
@@ -93,6 +97,7 @@ npm install
 npx playwright install chromium   # the full build; Playwright's headless shell can't load extensions
 npm test                          # fixture suite
 npm run test:site                 # your own site, from a config file (below)
+npm run test:devtools             # with DevTools docked beside the page
 npm run icons                     # re-render the PNG icons after editing an SVG in extension/icons/
 npm run screenshots               # rebuild the Chrome Web Store screenshots in store/screenshots/
 npm run package                   # build dist/allpanes-<version>.zip for the store, then test it
@@ -113,6 +118,12 @@ arriving mid-capture, both download formats, the Options page, and restricted pa
 `test/bound.html`, has a main column whose content is sized to the window (the layout that once
 produced a 6,239 px capture of 919 px of content); it checks that the pane is sized to its content
 or given up on, for a pane and for the document itself, and never chased.
+
+**DevTools suite** (`npm run test:devtools`) opens DevTools docked to the right, which leaves the
+fixture only part of the window wide, and checks that the capture comes out at the window's full
+width, identical pixel for pixel to one taken with DevTools in its own window, with nothing said
+about it on the result page; and that a dock at
+the bottom, which takes only height, changes nothing.
 
 **Site test** (`npm run test:site`) runs the same checks against pages of a real site, optionally
 behind a login. Copy `test/site.example.json` to `.config/allpanes/site.json` and edit it:

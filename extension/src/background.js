@@ -20,6 +20,14 @@ const SETTLE_MS = 700; // charts re-render and lazy images load after the resize
 const RETRY_WAIT_MS = 1500; // before the second pass, when the first left something overflowing
 const RETRY_RESIZE_SETTLE_MS = 250; // pause after each resize on the second pass, for slow layouts
 const DOC = "doc"; // the document's own overflow, where a pane id is expected
+// A viewport this much narrower than its window has something docked beside the page: DevTools
+// (whose narrowest dock is well over 200 px) or Chrome's side panel (320 px and up). The window
+// frame can account for a few pixels of difference on its own, never this many.
+const DOCKED_MIN_PX = 64;
+// With DevTools open on the tab, Chrome draws a "1400px × 3698px" badge in the page's top-right
+// corner after every resize and takes it down a second later; a screenshot sooner than that has
+// it. Our own session can't turn it off (DevTools' session owns it), so the shot waits it out.
+const DEVTOOLS_BADGE_MS = 1250;
 
 const busy = new Set();
 
@@ -40,10 +48,15 @@ async function captureTab(tab, options = {}) {
   let error = null;
   let attached = false;
   try {
+    // A tab that already has a debugger client before we attach has DevTools open on it (another
+    // extension would make attach() fail). Under Playwright every tab reads as attached, so the
+    // tests always take the DevTools path.
+    const targets = await chrome.debugger.getTargets().catch(() => []);
+    const devtoolsOpen = targets.some((t) => t.tabId === tab.id && t.attached);
     await chrome.debugger.attach(target, PROTOCOL_VERSION);
     attached = true;
     await evaluate(send, `(${agent.toString()})()`);
-    shot = await expandAndCapture(send, call, options);
+    shot = await expandAndCapture(send, call, { ...options, devtoolsOpen });
   } catch (err) {
     error = err;
   } finally {
@@ -64,8 +77,11 @@ async function captureTab(tab, options = {}) {
   } else {
     query = `error=${encodeURIComponent(explain(error, attached))}`;
   }
+  // Named window: without one Chrome puts the tab in the focused window, and with DevTools in a
+  // window of its own that can be a different window from the tab's, which the opener forbids.
   await chrome.tabs.create({
     url: chrome.runtime.getURL(`src/result.html?${query}`),
+    windowId: tab.windowId,
     index: tab.index + 1,
     openerTabId: tab.id,
   });
@@ -107,19 +123,33 @@ async function evaluate(send, expression) {
 
 async function expandAndCapture(send, call, options) {
   const start = await call("measure");
-  const { vw, dpr } = start;
+  const { dpr } = start;
   const maxHeight = Math.floor(MAX_DEVICE_PX / dpr);
   let height = start.vh;
 
+  // With DevTools or Chrome's side panel docked beside the page, the viewport is only part of the
+  // window and a responsive page has already reflowed to the narrower size. The override can lay
+  // the page out wider than the space it has, so the capture is taken at the window's width: the
+  // page as everyone without the panel sees it. The window's own frame can make `windowWidth` a
+  // few pixels generous on some platforms, which no layout notices. The result page doesn't
+  // mention it: the capture is simply right. The trace records it.
+  const docked = start.windowWidth - start.vw;
+  const vw = docked >= DOCKED_MIN_PX ? start.windowWidth : start.vw;
+
   let resizeSettleMs = 0; // extra pause after each resize; raised for the retry pass
+  let lastResize = 0;
   const setHeight = async (h) => {
     height = Math.min(maxHeight, Math.ceil(h));
     await send("Emulation.setDeviceMetricsOverride", { width: vw, height, deviceScaleFactor: dpr, mobile: false });
+    lastResize = Date.now();
     await call("settle", resizeSettleMs);
   };
 
-  // Pin the current size so the override, not the window, owns layout from here on.
+  // Pin the current size so the override, not the window, owns layout from here on. A width change
+  // is a full reflow (new breakpoint, charts redrawn), so it gets the slow pass's pause.
+  resizeSettleMs = vw !== start.vw ? RETRY_RESIZE_SETTLE_MS : 0;
   await setHeight(height);
+  resizeSettleMs = 0;
 
   // How much a pane's height changes per pixel of window height: ~1 for a flex pane in a
   // full-height shell, 0.55 for a 55vh modal body, 0 for a fixed max-h-80 table.
@@ -132,6 +162,7 @@ async function expandAndCapture(send, call, options) {
   const stuck = new Set();
   // What each round saw and did, kept on the capture record for diagnosing one that came out short.
   const trace = [];
+  if (vw !== start.vw) trace.push({ docked, viewport: start.vw, width: vw });
 
   const overflowOf = (m, id) => (id === DOC ? m.docOverflow : m.panes.find((p) => p.id === id)?.overflow);
 
@@ -260,6 +291,7 @@ async function expandAndCapture(send, call, options) {
     notes.push(`${residual} scroll area(s) could not be fully expanded and may be cut off.`);
   }
 
+  if (options.devtoolsOpen) await call("settle", Math.max(0, DEVTOOLS_BADGE_MS - (Date.now() - lastResize)));
   const image = await screenshot(send, vw, height, dpr, options.tileDevicePx ?? TILE_DEVICE_PX, m.background);
   return {
     ...image,

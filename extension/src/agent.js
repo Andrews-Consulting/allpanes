@@ -135,6 +135,9 @@ export function agent() {
     return {
       vw: innerWidth,
       vh: innerHeight,
+      // The browser window's width. Wider than the viewport when DevTools or Chrome's side panel is
+      // docked beside the page; see "docked" in background.js.
+      windowWidth: outerWidth,
       dpr: devicePixelRatio,
       docOverflow: doc.scrollHeight - innerHeight,
       panes,
